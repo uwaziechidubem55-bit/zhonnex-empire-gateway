@@ -1,0 +1,19 @@
+{
+  "id": "evt_1N95xKLM99482711",
+  "object": "event",
+  "type": "invoice.payment_succeeded",
+  "created": 1790374300,
+  "data": {
+    "object": {
+      "id": "in_1N95xK_InvoiceCleared",
+      "customer": "cus_N7x901KLM",
+      "status": "paid",
+      "metadata": {
+        "zhonnex_holding_brand": "Pacific Freight Maritime",
+        "action_execution_directive": "RESTORE_DIRECTORY_VISIBILITY",
+        "database_target_collection": "zhonnex_sub_company_registry"
+      }
+    }
+  },
+  "livemode": true
+}
