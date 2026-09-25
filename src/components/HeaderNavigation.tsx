@@ -12,7 +12,7 @@ export const HeaderNavigation: React.FC<HeaderProps> = ({ onHamburgerClick, show
       {/* 🔷 BRAND LOGO ANCHORED IN THE TOP LEFT CORNER FROM THE PUBLIC ASSET FOLDER */}
       <div style={styles.logoGroup}>
         <img 
-          src="/assets/logo.png" 
+          src="/assets/logo_final_zhonnex.png" 
           alt="ZHONNEX CORP Official Emblem" 
           style={styles.logoImage} 
         />
