@@ -1,0 +1,10 @@
+# Next.js Production Ignored Build Outputs
+.next/
+out/
+build/
+node_modules/
+.env
+.env.local
+.env.production
+*.log
+.vercel
