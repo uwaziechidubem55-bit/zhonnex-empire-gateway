@@ -1,0 +1,19 @@
+{
+  "id": "evt_1N90xKLM22839100",
+  "object": "event",
+  "type": "customer.subscription.deleted",
+  "created": 1790374262,
+  "data": {
+    "object": {
+      "id": "sub_1N90xK_ZhonnexLicensing",
+      "customer": "cus_N7x901KLM",
+      "status": "canceled",
+      "metadata": {
+        "zhonnex_holding_brand": "Pacific Freight Maritime",
+        "action_execution_directive": "STRIP_DIRECTORY_VISIBILITY",
+        "database_target_collection": "zhonnex_sub_company_registry"
+      }
+    }
+  },
+  "livemode": true
+}
