@@ -9,9 +9,13 @@ interface HeaderProps {
 export const HeaderNavigation: React.FC<HeaderProps> = ({ onHamburgerClick, showHamburger }) => {
   return (
     <header style={styles.header}>
-      {/* 🔷 BRAND LOGO EMBLEM ANCHORED IN THE TOP LEFT CORNER */}
+      {/* 🔷 BRAND LOGO ANCHORED IN THE TOP LEFT CORNER FROM THE PUBLIC ASSET FOLDER */}
       <div style={styles.logoGroup}>
-        <div style={styles.logoIcon}>🖲️</div>
+        <img 
+          src="/assets/logo.png" 
+          alt="ZHONNEX CORP Official Emblem" 
+          style={styles.logoImage} 
+        />
         <span style={styles.logoText}>ZHONNEX CORP</span>
       </div>
 
@@ -35,8 +39,8 @@ export const HeaderNavigation: React.FC<HeaderProps> = ({ onHamburgerClick, show
 
 const styles: Record<string, React.CSSProperties> = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 3rem', backgroundColor: ZhonnexTokens.colors.voidBlack, borderBottom: `1px solid #121214`, position: 'sticky', top: 0, zIndex: 4000 },
-  logoGroup: { display: 'flex', alignItems: 'center', gap: '0.8rem' },
-  logoIcon: { fontSize: '1.6rem' },
+  logoGroup: { display: 'flex', alignItems: 'center', gap: '1rem' },
+  logoImage: { height: '36px', width: 'auto', display: 'block' },
   logoText: { fontFamily: ZhonnexTokens.typography.displayFont, fontSize: '1.25rem', color: '#fff', letterSpacing: '2px', fontWeight: 'bold' },
   rightGroup: { display: 'flex', alignItems: 'center', gap: '2rem' },
   tab: { color: ZhonnexTokens.colors.textLight, fontSize: '0.85rem', fontFamily: ZhonnexTokens.typography.displayFont, cursor: 'pointer' },
