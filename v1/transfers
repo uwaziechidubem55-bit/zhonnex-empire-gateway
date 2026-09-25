@@ -1,0 +1,15 @@
+{
+  "amount": 850000,
+  "currency": "usd",
+  "destination": "acct_1N902KXL992",
+  "source_transaction": null,
+  "transfer_group": "ZHONNEX_WORKFORCE_PAYROLL_2026_09",
+  "metadata": {
+    "authorized_by_md_uid": "usr_exec_8810_director",
+    "cleared_by_secretary_uid": "usr_exec_9912_secretary",
+    "recipient_legal_name": "Alexander Thorne",
+    "assigned_position": "MX Vector Auditor",
+    "target_bank_routing_masked": "US77••••1004",
+    "payout_execution_method": "instant_wire_transfer_to_iban"
+  }
+}
