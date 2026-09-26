@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import { ZhonnexTokens } from '../config/design-tokens';
 
 interface HamburgerMenuProps {
@@ -7,22 +8,44 @@ interface HamburgerMenuProps {
   role: 'CUSTOMER' | 'STAFF' | 'MANAGEMENT_MD' | 'MANAGEMENT_SECRETARY' | 'OVERLORD';
 }
 
+/* Customer directory entries are live routes served by
+   src/pages/dashboard/customer/[section].tsx */
+const CUSTOMER_LINKS: Array<{ label: string; path: string }> = [
+  { label: '📁 Billing Ledger (Read-Only)', path: '/dashboard/customer/billing' },
+  { label: '📦 Products Vault (Licenses)', path: '/dashboard/customer/products' },
+  { label: '💎 Exclusive Offers & Upgrades', path: '/dashboard/customer/offers' },
+  { label: '🛠️ Help Center & Support Tickets', path: '/dashboard/customer/help' },
+  { label: '🛡️ Privacy Settings & MFA', path: '/dashboard/customer/privacy' },
+  { label: '📜 Terms & Conditions (v2.4)', path: '/dashboard/customer/terms' },
+  { label: '💼 Job Options & Openings', path: '/dashboard/customer/jobs' },
+  { label: '📺 Zhonnex Ad Station', path: '/dashboard/customer/ads' }
+];
+
 export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, role }) => {
+  const router = useRouter();
+
   if (!isOpen) return null;
+
+  const goTo = (path: string) => {
+    onClose();
+    router.push(path);
+  };
 
   const renderMenuItems = () => {
     switch (role) {
       case 'CUSTOMER':
         return (
           <>
-            <div style={styles.menuItem}>📁 Billing Ledger (Read-Only)</div>
-            <div style={styles.menuItem}>📦 Products Vault (Licenses)</div>
-            <div style={styles.menuItem}>💎 Exclusive Offers & Upgrades</div>
-            <div style={styles.menuItem}>🛠️ Help Center & Support Tickets</div>
-            <div style={styles.menuItem}>🛡️ Privacy Settings & MFA</div>
-            <div style={styles.menuItem}>📜 Terms & Conditions (v2.4)</div>
-            <div style={styles.menuItem}>💼 Job Options & Openings</div>
-            <div style={styles.menuItem}>📺 Zhonnex Ad Station</div>
+            {CUSTOMER_LINKS.map(item => (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => goTo(item.path)}
+                style={styles.menuItemBtn}
+              >
+                {item.label}
+              </button>
+            ))}
           </>
         );
       case 'STAFF':
@@ -81,10 +104,23 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, r
 
 const styles: Record<string, React.CSSProperties> = {
   overlayBackground: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 5000, display: 'flex', justifyContent: 'flex-end' },
-  menuContainer: { width: '380px', maxWidth: '85vw', height: '100%', backgroundColor: ZhonnexTokens.colors.quantumSlate, borderLeft: `1px solid #222`, padding: '2.5rem', display: 'flex', flexDirection: 'column', position: 'relative' },
+  menuContainer: { width: '380px', maxWidth: '85vw', height: '100%', backgroundColor: ZhonnexTokens.colors.quantumSlate, borderLeft: `1px solid #222`, padding: '2.5rem', display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto' },
   closeXButton: { position: 'absolute', top: '1.5rem', right: '1.5rem', backgroundColor: 'transparent', border: 'none', color: ZhonnexTokens.colors.imperialCyan, fontSize: '1.5rem', fontFamily: ZhonnexTokens.typography.displayFont, cursor: 'pointer', fontWeight: 'bold' },
   menuHeader: { fontFamily: ZhonnexTokens.typography.displayFont, color: '#fff', fontSize: '1.2rem', letterSpacing: '2px', marginBottom: '0.2rem', marginTop: '1rem' },
   badge: { fontSize: '0.7rem', color: ZhonnexTokens.colors.velocityGold, letterSpacing: '1px', marginBottom: '2rem', fontFamily: ZhonnexTokens.typography.displayFont },
   navLinks: { display: 'flex', flexDirection: 'column', gap: '1.2rem' },
-  menuItem: { color: ZhonnexTokens.colors.textLight, fontFamily: ZhonnexTokens.typography.primaryFont, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s', borderBottom: '1px solid #1a1a1c', paddingBottom: '0.6rem' }
+  menuItem: { color: ZhonnexTokens.colors.textLight, fontFamily: ZhonnexTokens.typography.primaryFont, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s', borderBottom: '1px solid #1a1a1c', paddingBottom: '0.6rem' },
+  menuItemBtn: {
+    color: ZhonnexTokens.colors.textLight,
+    fontFamily: ZhonnexTokens.typography.primaryFont,
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid #1a1a1c',
+    textAlign: 'left',
+    padding: '0 0 0.6rem 0',
+    width: '100%'
+  }
 };
