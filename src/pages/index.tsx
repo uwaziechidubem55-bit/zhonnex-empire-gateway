@@ -1,29 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
 import { ZhonnexTokens } from '../config/design-tokens';
 import { HeaderNavigation } from '../components/HeaderNavigation';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function DeepScrollGateway() {
   const router = useRouter();
-  const [credentials, setCredentials] = useState({ idKey: '', password: '' });
-  const [error, setError] = useState('');
-
-  const handleCustomerLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!credentials.idKey.trim() || !credentials.password) {
-      setError('ID Key and password are required.');
-      return;
-    }
-    setError('');
-    router.push('/dashboard/customer');
-  };
+  const isMobile = useIsMobile();
 
   return (
     <div style={styles.pageWrapper}>
       <HeaderNavigation />
 
       {/* SECTION 1: HERO */}
-      <section style={styles.heroSection}>
+      <section
+        style={{
+          ...styles.heroSection,
+          padding: isMobile ? '3rem 1.25rem' : '3rem 2rem'
+        }}
+      >
         <p style={styles.eyebrow}>ZHONNEX EMPIRE GATEWAY</p>
         <h1 style={styles.mainTitle}>INITIALIZE YOUR ECOSYSTEM ACCESS</h1>
         <p style={styles.tagline}>
@@ -56,7 +51,12 @@ export default function DeepScrollGateway() {
       </section>
 
       {/* SECTION 2: CAPABILITIES */}
-      <section style={styles.featuresSection}>
+      <section
+        style={{
+          ...styles.featuresSection,
+          padding: isMobile ? '3rem 1.25rem' : '5rem 3rem'
+        }}
+      >
         <div style={styles.featureCard}>
           <div style={styles.featureIndex}>01</div>
           <h3 style={styles.featureTitle}>Sovereign Multi-Currency Execution</h3>
@@ -75,39 +75,40 @@ export default function DeepScrollGateway() {
         </div>
       </section>
 
-      {/* SECTION 3: GET STARTED */}
-      <section style={styles.getStartedAnchorSection} id="get-started">
-        <div style={styles.authContainerFrame}>
+      {/* SECTION 3: GET STARTED — routes to the customer interface
+          (/access) where users register or sign in. */}
+      <section
+        style={{
+          ...styles.getStartedAnchorSection,
+          padding: isMobile ? '3rem 1.1rem' : '4rem 2rem'
+        }}
+        id="get-started"
+      >
+        <div
+          style={{
+            ...styles.authContainerFrame,
+            padding: isMobile ? '2.25rem 1.25rem' : '3rem'
+          }}
+        >
           <h2 style={styles.authTitle}>ECOSYSTEM TERMINAL INGESTION</h2>
-          <form onSubmit={handleCustomerLogin} style={styles.form}>
-            <label style={styles.label} htmlFor="idKey">ZHONNEX ID KEY</label>
-            <input
-              id="idKey"
-              type="text"
-              placeholder="Enter your private Zhonnex ID Key"
-              style={styles.input}
-              value={credentials.idKey}
-              onChange={e => setCredentials({ ...credentials, idKey: e.target.value })}
-              required
-            />
-            <label style={styles.label} htmlFor="password">ACCESS PASSWORD</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your cryptographic token password"
-              style={styles.input}
-              value={credentials.password}
-              onChange={e => setCredentials({ ...credentials, password: e.target.value })}
-              required
-            />
-            {error && <p style={styles.errorText}>{error}</p>}
-            <button type="submit" style={styles.getStartedBtn}>GET STARTED</button>
-          </form>
+          <p style={styles.ctaBody}>
+            Create your customer profile or sign in to an existing Zhonnex
+            account to initialize ecosystem access.
+          </p>
+          <button
+            type="button"
+            style={styles.getStartedBtn}
+            onClick={() => router.push('/access')}
+          >
+            GET STARTED
+          </button>
         </div>
       </section>
 
       {/* FOOTER — inert */}
-      <footer style={styles.footer}>
+      <footer
+        style={{ ...styles.footer, padding: isMobile ? '1.75rem 1rem' : '2rem 3rem' }}
+      >
         <span style={styles.footerText}>© 2026 ZHONNEX CORP. ALL RIGHTS RESERVED.</span>
       </footer>
     </div>
@@ -119,7 +120,10 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: ZhonnexTokens.colors.voidBlack,
     minHeight: '100vh',
     color: '#ffffff',
-    scrollBehavior: 'smooth'
+    scrollBehavior: 'smooth',
+    width: '100%',
+    maxWidth: '100vw',
+    overflowX: 'hidden'
   },
   heroSection: {
     minHeight: '80vh',
@@ -208,35 +212,19 @@ const styles: Record<string, React.CSSProperties> = {
   authTitle: {
     fontFamily: ZhonnexTokens.typography.displayFont,
     color: ZhonnexTokens.colors.imperialCyan,
-    marginBottom: '2rem',
+    marginBottom: '1.25rem',
     fontSize: '1.2rem',
     letterSpacing: '2px'
   },
-  form: { display: 'flex', flexDirection: 'column', gap: '0.6rem', textAlign: 'left' },
-  label: {
-    fontFamily: ZhonnexTokens.typography.displayFont,
-    fontSize: '0.65rem',
-    letterSpacing: '2px',
+  ctaBody: {
+    fontFamily: ZhonnexTokens.typography.primaryFont,
     color: ZhonnexTokens.colors.textMuted,
-    marginTop: '0.75rem'
-  },
-  input: {
-    padding: '14px',
-    backgroundColor: '#000000',
-    border: '1px solid #262626',
-    borderRadius: '6px',
-    color: '#ffffff',
     fontSize: '0.95rem',
-    fontFamily: 'monospace',
-    outline: 'none'
-  },
-  errorText: {
-    color: ZhonnexTokens.colors.securityFail,
-    fontSize: '0.8rem',
-    fontFamily: ZhonnexTokens.typography.primaryFont
+    lineHeight: '1.7',
+    margin: '0 0 1.75rem 0'
   },
   getStartedBtn: {
-    marginTop: '1.25rem',
+    width: '100%',
     padding: '16px',
     backgroundColor: ZhonnexTokens.colors.imperialCyan,
     border: 'none',
