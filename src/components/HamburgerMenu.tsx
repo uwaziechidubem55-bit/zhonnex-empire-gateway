@@ -81,7 +81,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, r
 
 const styles: Record<string, React.CSSProperties> = {
   overlayBackground: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 5000, display: 'flex', justifyContent: 'flex-end' },
-  menuContainer: { width: '380px', height: '100%', backgroundColor: ZhonnexTokens.colors.quantumSlate, borderLeft: `1px solid #222`, padding: '2.5rem', display: 'flex', flexDirection: 'column', position: 'relative' },
+  menuContainer: { width: '380px', maxWidth: '85vw', height: '100%', backgroundColor: ZhonnexTokens.colors.quantumSlate, borderLeft: `1px solid #222`, padding: '2.5rem', display: 'flex', flexDirection: 'column', position: 'relative' },
   closeXButton: { position: 'absolute', top: '1.5rem', right: '1.5rem', backgroundColor: 'transparent', border: 'none', color: ZhonnexTokens.colors.imperialCyan, fontSize: '1.5rem', fontFamily: ZhonnexTokens.typography.displayFont, cursor: 'pointer', fontWeight: 'bold' },
   menuHeader: { fontFamily: ZhonnexTokens.typography.displayFont, color: '#fff', fontSize: '1.2rem', letterSpacing: '2px', marginBottom: '0.2rem', marginTop: '1rem' },
   badge: { fontSize: '0.7rem', color: ZhonnexTokens.colors.velocityGold, letterSpacing: '1px', marginBottom: '2rem', fontFamily: ZhonnexTokens.typography.displayFont },
