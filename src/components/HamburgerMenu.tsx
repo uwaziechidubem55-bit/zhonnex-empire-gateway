@@ -21,6 +21,11 @@ const CUSTOMER_LINKS: Array<{ label: string; path: string }> = [
   { label: '📺 Zhonnex Ad Station', path: '/dashboard/customer/ads' }
 ];
 
+/* Management MD live routes */
+const MD_LINKS: Array<{ label: string; path: string }> = [
+  { label: '🎛️ Customer Content Matrix (Publish)', path: '/dashboard/content-matrix' }
+];
+
 export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, role }) => {
   const router = useRouter();
 
@@ -61,6 +66,16 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, r
       case 'MANAGEMENT_MD':
         return (
           <>
+            {MD_LINKS.map(item => (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => goTo(item.path)}
+                style={styles.menuItemBtn}
+              >
+                {item.label}
+              </button>
+            ))}
             <div style={styles.menuItem}>🏢 Holdings Matrix (Company Registry)</div>
             <div style={styles.menuItem}>📉 Productivity Tracker & Task Metrics</div>
             <div style={styles.menuItem}>🔧 Role Configuration Matrix</div>
