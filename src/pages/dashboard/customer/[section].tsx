@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import type { GetStaticPaths, GetStaticProps } from 'next';
 import { ZhonnexTokens } from '../../../config/design-tokens';
 import { HeaderNavigation } from '../../../components/HeaderNavigation';
 import { HamburgerMenu } from '../../../components/HamburgerMenu';
 import { useIsMobile } from '../../../hooks/useIsMobile';
+import {
+  ContentMatrix,
+  DEFAULT_MATRIX,
+  loadContentMatrix
+} from '../../../config/content-matrix';
 
 /* ------------------------------------------------------------------ */
 /* Customer rooms — one dynamic page serves every hamburger link.     */
+/* All displayed data (prices, licenses, offers, vacancies) comes     */
+/* from the Management-published content matrix.                      */
 /* Routes: /dashboard/customer/{billing|products|offers|help|privacy| */
 /*         terms|jobs|ads}                                            */
 /* ------------------------------------------------------------------ */
@@ -32,35 +39,22 @@ export const getStaticPaths: GetStaticPaths = async () => ({
 
 export const getStaticProps: GetStaticProps = async () => ({ props: {} });
 
-const BILLING_ROWS = [
-  { date: '2026-09-24', ref: 'ZX-INV-8841', desc: 'Empire Gateway Platform Fee', amount: '₦ 12,500.00', status: 'SETTLED' },
-  { date: '2026-09-18', ref: 'ZX-INV-8790', desc: 'Velocity Finance Engine — Cycle 09', amount: '₦ 48,000.00', status: 'SETTLED' },
-  { date: '2026-09-11', ref: 'ZX-INV-8732', desc: 'MX Suite Logistics Core Add-On', amount: '₦ 22,750.00', status: 'PENDING' },
-  { date: '2026-09-02', ref: 'ZX-INV-8688', desc: 'Cognitive Mesh Uplink Renewal', amount: '₦ 15,000.00', status: 'SETTLED' }
-];
-
-const PRODUCTS = [
-  { name: 'Empire Gateway Core', key: 'ZX-CORE-9917-EMPIRE', seats: '1 Terminal', expiry: '2027-01-01', status: 'ACTIVE' },
-  { name: 'Velocity Finance Engine', key: 'ZX-VEL-4410-FINANCE', seats: '3 Operators', expiry: '2026-12-15', status: 'ACTIVE' },
-  { name: 'MX Suite Logistics Core', key: 'ZX-MXS-2280-LOGISTICS', seats: '5 Fleet Nodes', expiry: '2026-10-30', status: 'EXPIRING' }
-];
-
-const OFFERS = [
-  { tier: 'GOLD TIER UPLIFT', perk: 'Zero platform fees for 90 days plus priority mesh routing on every transaction pipeline.' },
-  { tier: 'FLEET EXPANSION PACK', perk: 'Add 10 extra MX Suite logistics nodes at 40% below the standard rate.' }
-];
-
-const JOBS = [
-  { role: 'Vector Guidance Analyst', division: 'MX SUITE LOGISTICS', loc: 'Onitsha HQ / Remote', type: 'FULL-TIME' },
-  { role: 'Ledger Integrity Auditor', division: 'VELOCITY FINANCE', loc: 'Remote', type: 'CONTRACT' },
-  { role: 'Cognitive Mesh Trainer', division: 'GENERATIONAL MESH', loc: 'Lagos Node', type: 'FULL-TIME' }
-];
-
 export default function CustomerRoom() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState('');
+
+  /* Management-published content (defaults on first paint, then the
+     published matrix; live-updates when Management publishes in
+     another tab). */
+  const [matrix, setMatrix] = useState<ContentMatrix>(DEFAULT_MATRIX);
+  useEffect(() => {
+    setMatrix(loadContentMatrix());
+    const onStorage = () => setMatrix(loadContentMatrix());
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const section =
     typeof router.query.section === 'string' ? router.query.section : '';
@@ -128,10 +122,11 @@ export default function CustomerRoom() {
               <div style={styles.card}>
                 <p style={styles.muted}>
                   Atomic cash-transaction trace. Ledger is read-only for
-                  customer tier — modifications require Management clearance.
+                  customer tier — entries and prices are published by the
+                  Management Directorate.
                 </p>
-                {BILLING_ROWS.map(row => (
-                  <div key={row.ref} style={styles.ledgerRow}>
+                {matrix.billing.map(row => (
+                  <div key={`${row.ref}-${row.date}`} style={styles.ledgerRow}>
                     <div style={styles.ledgerLeft}>
                       <span style={styles.ledgerRef}>{row.ref}</span>
                       <span style={styles.ledgerDesc}>{row.desc}</span>
@@ -158,7 +153,7 @@ export default function CustomerRoom() {
 
             {section === 'products' && (
               <div style={styles.card}>
-                {PRODUCTS.map(p => (
+                {matrix.products.map(p => (
                   <div key={p.key} style={styles.productCard}>
                     <div style={styles.productHead}>
                       <span style={styles.productName}>{p.name}</span>
@@ -185,7 +180,7 @@ export default function CustomerRoom() {
 
             {section === 'offers' && (
               <div style={styles.card}>
-                {OFFERS.map(o => (
+                {matrix.offers.map(o => (
                   <div key={o.tier} style={styles.offerCard}>
                     <div style={styles.offerTier}>{o.tier}</div>
                     <p style={styles.muted}>{o.perk}</p>
@@ -339,7 +334,13 @@ export default function CustomerRoom() {
 
             {section === 'jobs' && (
               <div style={styles.card}>
-                {JOBS.map(j => (
+                {matrix.jobs.length === 0 && (
+                  <p style={styles.muted}>
+                    No open vacancies right now — Management publishes new
+                    openings here.
+                  </p>
+                )}
+                {matrix.jobs.map(j => (
                   <div key={j.role} style={styles.jobCard}>
                     <div style={styles.productHead}>
                       <span style={styles.productName}>{j.role}</span>
