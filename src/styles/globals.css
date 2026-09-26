@@ -1,0 +1,39 @@
+/* ZHONNEX CORP — global shell styles.
+   Fixes the mobile "white gutter" problem: the root document itself must be
+   void black so white can never appear outside the page wrappers, and any
+   accidental horizontal overflow is clamped instead of revealing white. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000000;
+  color: #ffffff;
+  color-scheme: dark;
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+#__next {
+  min-height: 100vh;
+  background-color: #000000;
+}
+
+img {
+  max-width: 100%;
+}
+
+::selection {
+  background: #00f0ff;
+  color: #000000;
+}
