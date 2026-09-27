@@ -8,8 +8,9 @@ interface HamburgerMenuProps {
   role: 'CUSTOMER' | 'STAFF' | 'MANAGEMENT_MD' | 'MANAGEMENT_SECRETARY' | 'OVERLORD';
 }
 
-/* Customer directory entries are live routes served by
-   src/pages/dashboard/customer/[section].tsx */
+/* Every directory entry is a live route.
+   Customer rooms:  src/pages/dashboard/customer/[section].tsx
+   Internal rooms:  src/pages/dashboard/room/[role]/[section].tsx */
 const CUSTOMER_LINKS: Array<{ label: string; path: string }> = [
   { label: '📁 Billing Ledger (Read-Only)', path: '/dashboard/customer/billing' },
   { label: '📦 Products Vault (Licenses)', path: '/dashboard/customer/products' },
@@ -21,9 +22,35 @@ const CUSTOMER_LINKS: Array<{ label: string; path: string }> = [
   { label: '📺 Zhonnex Ad Station', path: '/dashboard/customer/ads' }
 ];
 
-/* Management MD live routes */
+const STAFF_LINKS: Array<{ label: string; path: string }> = [
+  { label: '🗃️ Employee Dossier & Credential', path: '/dashboard/room/staff/dossier' },
+  { label: '💳 Compensation & Direct Deposit', path: '/dashboard/room/staff/compensation' },
+  { label: '📊 Operational Metrics Pipeline', path: '/dashboard/room/staff/metrics' },
+  { label: '🛠️ MX Suite Tracking Vector Feed', path: '/dashboard/room/staff/vector-feed' },
+  { label: '🔒 Security Threat Escalation', path: '/dashboard/room/staff/escalation' }
+];
+
 const MD_LINKS: Array<{ label: string; path: string }> = [
-  { label: '🎛️ Customer Content Matrix (Publish)', path: '/dashboard/content-matrix' }
+  { label: '🎛️ Customer Content Matrix (Publish)', path: '/dashboard/content-matrix' },
+  { label: '🏢 Holdings Matrix (Company Registry)', path: '/dashboard/room/md/holdings' },
+  { label: '📉 Productivity Tracker & Task Metrics', path: '/dashboard/room/md/productivity' },
+  { label: '🔧 Role Configuration Matrix', path: '/dashboard/room/md/role-config' },
+  { label: '💸 Payment Hub: Initiate Board', path: '/dashboard/management-md' }
+];
+
+const SECRETARY_LINKS: Array<{ label: string; path: string }> = [
+  { label: '🏢 Holdings Matrix (Read-Only)', path: '/dashboard/room/secretary/holdings' },
+  { label: '📉 Task Counter Audit Records', path: '/dashboard/room/secretary/audit' },
+  { label: '💸 Payment Hub: Execute Queue', path: '/dashboard/management-secretary' }
+];
+
+const OVERLORD_LINKS: Array<{ label: string; path: string }> = [
+  { label: '👁️ Absolute System Log Matrix', path: '/dashboard/room/overlord/logs' },
+  { label: '💰 Empire Financial Telemetry', path: '/dashboard/room/overlord/telemetry' },
+  { label: '⚙️ Master Price Matrix Core', path: '/dashboard/room/overlord/price-matrix' },
+  { label: '👑 Position Creator Panel', path: '/dashboard/room/overlord/positions' },
+  { label: '🔑 Global Override Matrix', path: '/dashboard/room/overlord/override' },
+  { label: '📝 Master Payroll Scheduler', path: '/dashboard/room/overlord/payroll' }
 ];
 
 export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, role }) => {
@@ -36,71 +63,18 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, r
     router.push(path);
   };
 
-  const renderMenuItems = () => {
+  const linksFor = (): Array<{ label: string; path: string }> => {
     switch (role) {
       case 'CUSTOMER':
-        return (
-          <>
-            {CUSTOMER_LINKS.map(item => (
-              <button
-                key={item.path}
-                type="button"
-                onClick={() => goTo(item.path)}
-                style={styles.menuItemBtn}
-              >
-                {item.label}
-              </button>
-            ))}
-          </>
-        );
+        return CUSTOMER_LINKS;
       case 'STAFF':
-        return (
-          <>
-            <div style={styles.menuItem}>🗃️ Employee Dossier & Credential</div>
-            <div style={styles.menuItem}>💳 Compensation & Direct Deposit</div>
-            <div style={styles.menuItem}>📊 Operational Metrics Pipeline</div>
-            <div style={styles.menuItem}>🛠️ MX Suite Tracking Vector Feed</div>
-            <div style={styles.menuItem}>🔒 Security Threat Escalation</div>
-          </>
-        );
+        return STAFF_LINKS;
       case 'MANAGEMENT_MD':
-        return (
-          <>
-            {MD_LINKS.map(item => (
-              <button
-                key={item.path}
-                type="button"
-                onClick={() => goTo(item.path)}
-                style={styles.menuItemBtn}
-              >
-                {item.label}
-              </button>
-            ))}
-            <div style={styles.menuItem}>🏢 Holdings Matrix (Company Registry)</div>
-            <div style={styles.menuItem}>📉 Productivity Tracker & Task Metrics</div>
-            <div style={styles.menuItem}>🔧 Role Configuration Matrix</div>
-            <div style={{ ...styles.menuItem, color: ZhonnexTokens.colors.velocityGold }}>💸 Payment Hub: Initiate Board</div>
-          </>
-        );
+        return MD_LINKS;
       case 'MANAGEMENT_SECRETARY':
-        return (
-          <>
-            <div style={styles.menuItem}>🏢 Holdings Matrix (Read-Only)</div>
-            <div style={styles.menuItem}>📉 Task Counter Audit Records</div>
-            <div style={{ ...styles.menuItem, color: ZhonnexTokens.colors.securityPass }}>💸 Payment Hub: Execute Queue</div>
-          </>
-        );
+        return SECRETARY_LINKS;
       case 'OVERLORD':
-        return (
-          <>
-            <div style={{ ...styles.menuItem, color: ZhonnexTokens.colors.securityFail }}>👁️ Absolute System Log Matrix</div>
-            <div style={styles.menuItem}>💰 Empire Financial Telemetry</div>
-            <div style={styles.menuItem}>⚙️ Master Price Matrix Core</div>
-            <div style={styles.menuItem}>👑 Position Creator Panel</div>
-            <div style={styles.menuItem}>🔑 Global Override Matrix</div>
-            <div style={styles.menuItem}>📝 Master Payroll Scheduler</div>
-          </>
-        );
+        return OVERLORD_LINKS;
     }
   };
 
@@ -111,7 +85,18 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, r
         <button onClick={onClose} style={styles.closeXButton}>X</button>
         <div style={styles.menuHeader}>ZHONNEX DIRECTORY</div>
         <div style={styles.badge}>{role} MATRIX</div>
-        <nav style={styles.navLinks}>{renderMenuItems()}</nav>
+        <nav style={styles.navLinks}>
+          {linksFor().map(item => (
+            <button
+              key={item.path}
+              type="button"
+              onClick={() => goTo(item.path)}
+              style={styles.menuItemBtn}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
       </div>
     </div>
   );
@@ -124,7 +109,6 @@ const styles: Record<string, React.CSSProperties> = {
   menuHeader: { fontFamily: ZhonnexTokens.typography.displayFont, color: '#fff', fontSize: '1.2rem', letterSpacing: '2px', marginBottom: '0.2rem', marginTop: '1rem' },
   badge: { fontSize: '0.7rem', color: ZhonnexTokens.colors.velocityGold, letterSpacing: '1px', marginBottom: '2rem', fontFamily: ZhonnexTokens.typography.displayFont },
   navLinks: { display: 'flex', flexDirection: 'column', gap: '1.2rem' },
-  menuItem: { color: ZhonnexTokens.colors.textLight, fontFamily: ZhonnexTokens.typography.primaryFont, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s', borderBottom: '1px solid #1a1a1c', paddingBottom: '0.6rem' },
   menuItemBtn: {
     color: ZhonnexTokens.colors.textLight,
     fontFamily: ZhonnexTokens.typography.primaryFont,
