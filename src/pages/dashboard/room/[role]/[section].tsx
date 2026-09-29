@@ -95,10 +95,15 @@ const HOLDS = [
   { name: 'Zhonnex Cognitive Mesh Holdings', status: 'RENEWAL DUE', note: 'Uplink renewal pending cycle close' }
 ];
 
-const WORKFORCE = [
-  { name: 'Alexander Thorne', position: 'MX Vector Auditor', tasks: 142 },
-  { name: 'Seraphina Vance', position: 'Rust Infrastructure SRE', tasks: 289 }
-];
+interface WorkforcePerson {
+  name: string;
+  position: string;
+  tasks: number;
+  salary: string;
+  account: string;
+  credential: string;
+  clearance: string;
+}
 
 const LOGS = [
   '[2026-09-25 17:11:02] [LEDGER] SUCCESS: User ID #8819 compiled transaction split inside collection.',
@@ -112,6 +117,7 @@ export default function InternalRoleRoom() {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [workforce, setWorkforce] = useState<WorkforcePerson[]>([]);
 
   const role = typeof router.query.role === 'string' ? router.query.role : '';
   const section =
@@ -125,6 +131,17 @@ export default function InternalRoleRoom() {
   useEffect(() => {
     setMatrix(loadContentMatrix());
     setQueue(loadPayrollQueue());
+  }, [role, section]);
+
+  useEffect(() => {
+    fetch('/api/workforce-roster')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data && Array.isArray(data.people)) setWorkforce(data.people);
+      })
+      .catch(() => {
+        setWorkforce([]);
+      });
   }, [role, section]);
 
   /* overlord overrides */
@@ -331,10 +348,16 @@ export default function InternalRoleRoom() {
             {/* ---------------- STAFF ---------------- */}
             {role === 'staff' && section === 'dossier' && (
               <div style={st.card}>
-                <div style={st.kvRow}><span style={st.kvLabel}>LEGAL NAME</span><span>Alexander Thorne</span></div>
-                <div style={st.kvRow}><span style={st.kvLabel}>ASSIGNED POSITION</span><span>MX Vector Auditor</span></div>
-                <div style={st.kvRow}><span style={st.kvLabel}>EMPLOYEE CREDENTIAL</span><span style={st.mono}>ZX-EMP-0007</span></div>
-                <div style={st.kvRow}><span style={st.kvLabel}>CLEARANCE</span><span style={{ color: ZhonnexTokens.colors.securityPass }}>TRAFFIC ROUTING DIVISION</span></div>
+                {workforce[0] ? (
+                  <>
+                    <div style={st.kvRow}><span style={st.kvLabel}>LEGAL NAME</span><span>{workforce[0].name}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>ASSIGNED POSITION</span><span>{workforce[0].position}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>EMPLOYEE CREDENTIAL</span><span style={st.mono}>{workforce[0].credential}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>CLEARANCE</span><span style={{ color: ZhonnexTokens.colors.securityPass }}>{workforce[0].clearance}</span></div>
+                  </>
+                ) : (
+                  <p style={st.muted}>Identity is held on the server. Enter through the internal terminal first.</p>
+                )}
                 <button
                   type="button"
                   style={st.goldBtn}
@@ -347,9 +370,9 @@ export default function InternalRoleRoom() {
 
             {role === 'staff' && section === 'compensation' && (
               <div style={st.card}>
-                <div style={st.kvRow}><span style={st.kvLabel}>CYCLE 09 GROSS</span><span style={st.mono}>$8,500.00</span></div>
+                <div style={st.kvRow}><span style={st.kvLabel}>CYCLE 09 GROSS</span><span style={st.mono}>{workforce[0] ? workforce[0].salary : '—'}</span></div>
                 <div style={st.kvRow}><span style={st.kvLabel}>REMITTANCE STATUS</span><span style={{ color: ZhonnexTokens.colors.velocityGold }}>IN EXECUTIVE QUEUE</span></div>
-                <div style={st.kvRow}><span style={st.kvLabel}>ROUTING (MASKED)</span><span style={st.mono}>IBAN: US77•••1004</span></div>
+                <div style={st.kvRow}><span style={st.kvLabel}>ROUTING (MASKED)</span><span style={st.mono}>{workforce[0] ? workforce[0].account : 'Held on server'}</span></div>
                 <p style={st.muted}>
                   Payouts execute after MD initiation and Secretary clearance.
                   Track final state in your next cycle statement.
@@ -503,7 +526,7 @@ export default function InternalRoleRoom() {
 
             {role === 'md' && section === 'productivity' && (
               <div style={st.card}>
-                {WORKFORCE.map(w => (
+                {workforce.map(w => (
                   <div key={w.name} style={st.ledgerRow}>
                     <div>
                       <span style={st.white}>{w.name}</span>
@@ -616,7 +639,7 @@ export default function InternalRoleRoom() {
 
             {role === 'secretary' && section === 'audit' && (
               <div style={st.card}>
-                {WORKFORCE.map(w => (
+                {workforce.map(w => (
                   <div key={w.name} style={st.ledgerRow}>
                     <div>
                       <span style={st.white}>{w.name}</span>
