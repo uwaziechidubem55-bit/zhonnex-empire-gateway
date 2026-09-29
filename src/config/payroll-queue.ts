@@ -16,24 +16,9 @@ export interface PayrollItem {
 
 export const PAYROLL_KEY = 'zhonnex_payroll_queue';
 
-export const DEFAULT_QUEUE: PayrollItem[] = [
-  {
-    id: 'PAY-991',
-    name: 'Alexander Thorne',
-    position: 'MX Vector Auditor',
-    account: 'IBAN: US77•••1004',
-    amount: '$8,500.00',
-    status: 'STAGED_FOR_SECRETARY'
-  },
-  {
-    id: 'PAY-992',
-    name: 'Seraphina Vance',
-    position: 'Rust Infrastructure SRE',
-    account: 'IBAN: US88•••9921',
-    amount: '$12,400.00',
-    status: 'STAGED_FOR_SECRETARY'
-  }
-];
+/* Names and account numbers are not stored in source.
+ * The MD terminal loads the roster from the server environment. */
+export const DEFAULT_QUEUE: PayrollItem[] = [];
 
 export function loadPayrollQueue(): PayrollItem[] {
   if (typeof window === 'undefined') return DEFAULT_QUEUE;
