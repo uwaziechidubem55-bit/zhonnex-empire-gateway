@@ -232,7 +232,7 @@ export default function CustomerAccessTerminal() {
               <input
                 id="reg-idkey"
                 type="text"
-                placeholder="Min 6 characters — e.g. ZX-EMPIRE-001"
+                placeholder="At least 6 characters"
                 style={styles.input}
                 value={register.idKey}
                 onChange={e => setRegister({ ...register, idKey: e.target.value })}
