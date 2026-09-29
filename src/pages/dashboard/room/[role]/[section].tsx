@@ -11,6 +11,17 @@ import {
   saveContentMatrix
 } from '../../../../config/content-matrix';
 import { loadPayrollQueue, PayrollItem } from '../../../../config/payroll-queue';
+import {
+  StaffAccount,
+  loadStaffAccounts,
+  verifyStaff
+} from '../../../../config/staff-registry';
+import {
+  CommMessage,
+  canTransmit,
+  loadComms,
+  sendComm
+} from '../../../../config/comms';
 
 /* ------------------------------------------------------------------ */
 /* Internal role rooms — one dynamic page for every hamburger link    */
@@ -26,6 +37,7 @@ type MenuRole =
 
 const ROOMS: Record<string, Record<string, { title: string; badge: string; menu: MenuRole }>> = {
   staff: {
+    'duty-post': { title: 'DUTY POST — PERSONAL SPACE', badge: 'PRIVATE', menu: 'STAFF' },
     dossier: { title: 'EMPLOYEE DOSSIER & CREDENTIAL', badge: 'STAFF', menu: 'STAFF' },
     compensation: { title: 'COMPENSATION & DIRECT DEPOSIT', badge: 'PAYROLL', menu: 'STAFF' },
     metrics: { title: 'OPERATIONAL METRICS PIPELINE', badge: 'LIVE', menu: 'STAFF' },
@@ -35,11 +47,17 @@ const ROOMS: Record<string, Record<string, { title: string; badge: string; menu:
   md: {
     holdings: { title: 'HOLDINGS MATRIX', badge: 'COMPANY REGISTRY', menu: 'MANAGEMENT_MD' },
     productivity: { title: 'PRODUCTIVITY TRACKER & TASK METRICS', badge: 'WORKFORCE', menu: 'MANAGEMENT_MD' },
-    'role-config': { title: 'ROLE CONFIGURATION MATRIX', badge: 'TRACKS', menu: 'MANAGEMENT_MD' }
+    'role-config': { title: 'ROLE CONFIGURATION MATRIX', badge: 'TRACKS', menu: 'MANAGEMENT_MD' },
+    'sec-gen': { title: 'SECRETARY GENERAL DESK', badge: 'DOCUMENTATION & REPORTS', menu: 'MANAGEMENT_MD' },
+    board: { title: 'BOARD OF DIRECTORS CHAMBER', badge: 'SHAREHOLDERS VIEW', menu: 'MANAGEMENT_MD' },
+    comms: { title: 'CROSS-INTERFACE COMMS', badge: 'MD CLEARANCE', menu: 'MANAGEMENT_MD' }
   },
   secretary: {
     holdings: { title: 'HOLDINGS MATRIX', badge: 'READ-ONLY', menu: 'MANAGEMENT_SECRETARY' },
-    audit: { title: 'TASK COUNTER AUDIT RECORDS', badge: 'AUDIT', menu: 'MANAGEMENT_SECRETARY' }
+    audit: { title: 'TASK COUNTER AUDIT RECORDS', badge: 'AUDIT', menu: 'MANAGEMENT_SECRETARY' },
+    'fin-reports': { title: 'FINANCIAL DOCUMENTATION & REPORTS', badge: 'FINANCIAL SECRETARY', menu: 'MANAGEMENT_SECRETARY' },
+    treasury: { title: 'TREASURY FUND MONITOR', badge: 'TREASURER', menu: 'MANAGEMENT_SECRETARY' },
+    comms: { title: 'CROSS-INTERFACE COMMS', badge: 'SEC CLEARANCE', menu: 'MANAGEMENT_SECRETARY' }
   },
   overlord: {
     logs: { title: 'ABSOLUTE SYSTEM LOG MATRIX', badge: 'EVERY ACTIVITY', menu: 'OVERLORD' },
@@ -47,7 +65,8 @@ const ROOMS: Record<string, Record<string, { title: string; badge: string; menu:
     'price-matrix': { title: 'MASTER PRICE MATRIX CORE', badge: 'GLOBAL OVERRIDE', menu: 'OVERLORD' },
     positions: { title: 'POSITION CREATOR PANEL', badge: 'R&S INJECTION', menu: 'OVERLORD' },
     override: { title: 'GLOBAL OVERRIDE MATRIX', badge: 'KILL SWITCHES', menu: 'OVERLORD' },
-    payroll: { title: 'MASTER PAYROLL SCHEDULER', badge: 'OBSERVE', menu: 'OVERLORD' }
+    payroll: { title: 'MASTER PAYROLL SCHEDULER', badge: 'OBSERVE', menu: 'OVERLORD' },
+    comms: { title: 'CROSS-INTERFACE COMMS', badge: 'SOVEREIGN', menu: 'OVERLORD' }
   }
 };
 
@@ -130,7 +149,7 @@ export default function InternalRoleRoom() {
   const [escId, setEscId] = useState('');
 
   /* overlord position creator */
-  const [pos, setPos] = useState({ role: '', division: '', loc: 'Remote', type: 'FULL-TIME' });
+  const [pos, setPos] = useState({ jobRole: '', title: '' });
 
   const publishMatrix = (next: ContentMatrix) => {
     saveContentMatrix(next);
@@ -147,14 +166,16 @@ export default function InternalRoleRoom() {
 
   const injectPosition = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pos.role.trim() || !pos.division.trim()) return;
-    const jobs = [
-      ...matrix.jobs,
-      { role: pos.role.trim(), division: pos.division.trim(), loc: pos.loc, type: pos.type }
-    ];
+    const title = pos.title.trim();
+    if (!pos.jobRole || !title) return;
+    const jobs = matrix.jobs.map(j =>
+      j.role === pos.jobRole
+        ? { ...j, positions: [...(j.positions || []), title] }
+        : j
+    );
     publishMatrix({ ...matrix, jobs });
-    setPos({ role: '', division: '', loc: 'Remote', type: 'FULL-TIME' });
-    setNotice('POSITION INJECTED — vacancy now live in the customer Jobs room.');
+    setPos({ jobRole: '', title: '' });
+    setNotice('POSITION INJECTED — now live under that job in the customer Jobs room.');
   };
 
   const saveOverrides = () => {
@@ -170,6 +191,112 @@ export default function InternalRoleRoom() {
     setEscId(`ZX-SEC-${Math.floor(100 + Math.random() * 900)}`);
     setEsc({ severity: 'HIGH', detail: '' });
   };
+
+  /* ---- duty post (private staff space) ---- */
+  const [staffSession, setStaffSession] = useState<string | null>(null);
+  const [duUser, setDuUser] = useState('');
+  const [duPass, setDuPass] = useState('');
+  const [duError, setDuError] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setStaffSession(window.localStorage.getItem('zhonnex_staff_session'));
+  }, []);
+
+  const dutyLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const acc = verifyStaff(duUser, duPass);
+    if (!acc) {
+      setDuError(
+        'INVALID CREDENTIALS — username is the name on your application; passcode is your ZH-…-Corp code.'
+      );
+      return;
+    }
+    window.localStorage.setItem('zhonnex_staff_session', acc.username);
+    setStaffSession(acc.username);
+    setDuError('');
+  };
+
+  const dutyLogout = () => {
+    window.localStorage.removeItem('zhonnex_staff_session');
+    setStaffSession(null);
+  };
+
+  const myAccount: StaffAccount | undefined = staffSession
+    ? loadStaffAccounts().find(a => a.username === staffSession)
+    : undefined;
+
+  /* ---- cross-interface comms ---- */
+  const [comms, setComms] = useState<CommMessage[]>([]);
+  useEffect(() => {
+    setComms(loadComms());
+  }, [role, section]);
+  const [commSubject, setCommSubject] = useState('');
+  const [commBody, setCommBody] = useState('');
+
+  const transmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!room) return;
+    const updated = sendComm({
+      from: room.menu,
+      role: room.menu,
+      subject: commSubject,
+      body: commBody
+    });
+    if (updated) {
+      setComms(updated);
+      setCommSubject('');
+      setCommBody('');
+      setNotice('TRANSMITTED ACROSS ALL INTERFACES.');
+    }
+  };
+
+  /* ---- secretary general reports ---- */
+  const [reports, setReports] = useState<
+    Array<{ id: string; title: string; summary: string; by: string; time: string }>
+  >([]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('zhonnex_reports');
+      setReports(raw ? (JSON.parse(raw) as typeof reports) : []);
+    } catch {
+      setReports([]);
+    }
+  }, [role, section]);
+  const [repTitle, setRepTitle] = useState('');
+  const [repSummary, setRepSummary] = useState('');
+
+  const fileReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repTitle.trim() || !repSummary.trim() || typeof window === 'undefined') return;
+    const next = [
+      {
+        id: `ZX-REP-${Math.floor(100 + Math.random() * 900)}`,
+        title: repTitle.trim(),
+        summary: repSummary.trim(),
+        by: 'Secretary General',
+        time: new Date().toISOString().slice(0, 10)
+      },
+      ...reports
+    ];
+    window.localStorage.setItem('zhonnex_reports', JSON.stringify(next));
+    setReports(next);
+    setRepTitle('');
+    setRepSummary('');
+    setNotice('REPORT FILED TO THE BOARD RECORD.');
+  };
+
+  /* ---- treasury math ---- */
+  const money = (s: string) => parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+  const stagedTotal = queue
+    .filter(q => q.status !== 'PAID_TRANSACTION_SETTLED')
+    .reduce((t, q) => t + money(q.amount), 0)
+    .toFixed(2);
+  const paidTotal = queue
+    .filter(q => q.status === 'PAID_TRANSACTION_SETTLED')
+    .reduce((t, q) => t + money(q.amount), 0)
+    .toFixed(2);
 
   return (
     <div style={st.pageWrapper}>
@@ -295,6 +422,60 @@ export default function InternalRoleRoom() {
               </div>
             )}
 
+            {role === 'staff' && section === 'duty-post' && (
+              !myAccount ? (
+                <div style={st.card}>
+                  <p style={st.muted}>
+                    Every staff member owns a private Duty Post space — any
+                    position, any task. Sign in with the name on your
+                    application and your ZH-…-Corp passcode.
+                  </p>
+                  {duError && <p style={st.error}>{duError}</p>}
+                  <form onSubmit={dutyLogin} style={st.form}>
+                    <label style={st.label} htmlFor="du-user">USERNAME (APPLICATION NAME)</label>
+                    <input id="du-user" style={st.input} value={duUser} onChange={e => setDuUser(e.target.value)} required />
+                    <label style={st.label} htmlFor="du-pass">ACCESS PASSCODE</label>
+                    <input id="du-pass" type="password" style={st.input} placeholder="ZH-XXXXXX-Corp" value={duPass} onChange={e => setDuPass(e.target.value)} required />
+                    <button type="submit" style={st.cyanBtn}>ENTER DUTY POST</button>
+                  </form>
+                </div>
+              ) : (
+                <>
+                  <div style={st.card}>
+                    <div style={st.kvRow}><span style={st.kvLabel}>USERNAME</span><span>{myAccount.username}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>POSITION</span><span>{myAccount.position}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>JOB FAMILY</span><span>{myAccount.job}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>APPOINTED</span><span>{myAccount.appointedAt}</span></div>
+                    <div style={st.kvRow}><span style={st.kvLabel}>PASSCODE</span><span style={st.mono}>{myAccount.passcode.slice(0, 3)}••••••{myAccount.passcode.slice(-5)}</span></div>
+                    <button type="button" style={st.goldBtn} onClick={dutyLogout}>SIGN OUT OF DUTY POST</button>
+                  </div>
+                  <div style={st.card}>
+                    <h3 style={st.sectionHead}>MY DUTIES (POSITION-BASED)</h3>
+                    {myAccount.duties.map(d => (
+                      <div key={d} style={st.ledgerRow}>
+                        <span style={st.white}>• {d}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={st.card}>
+                    <h3 style={st.sectionHead}>INTERFACE INBOX</h3>
+                    {comms.length === 0 && (
+                      <p style={st.muted}>No directives received yet.</p>
+                    )}
+                    {comms.map(c => (
+                      <div key={c.id} style={st.ledgerRow}>
+                        <div>
+                          <span style={st.white}>{c.subject}</span>
+                          <span style={st.muted}> — {c.body}</span>
+                          <span style={st.muted}> · {c.from} · {c.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )
+            )}
+
             {/* ---------------- MD ---------------- */}
             {role === 'md' && section === 'holdings' && (
               <div style={st.card}>
@@ -355,6 +536,68 @@ export default function InternalRoleRoom() {
               </div>
             )}
 
+            {role === 'md' && section === 'sec-gen' && (
+              <>
+                <div style={st.card}>
+                  <h3 style={st.sectionHead}>FILE DOCUMENTATION / REPORT</h3>
+                  <p style={st.muted}>
+                    Secretary General desk — corporate documentation and
+                    reports land in the board record below.
+                  </p>
+                  <form onSubmit={fileReport} style={st.form}>
+                    <label style={st.label} htmlFor="rep-t">REPORT TITLE</label>
+                    <input id="rep-t" style={st.input} value={repTitle} onChange={e => setRepTitle(e.target.value)} required />
+                    <label style={st.label} htmlFor="rep-s">SUMMARY</label>
+                    <textarea id="rep-s" style={{ ...st.input, minHeight: '80px' }} value={repSummary} onChange={e => setRepSummary(e.target.value)} required />
+                    <button type="submit" style={st.cyanBtn}>FILE TO BOARD RECORD</button>
+                  </form>
+                </div>
+                <div style={st.card}>
+                  <h3 style={st.sectionHead}>CORPORATE RECORD</h3>
+                  {reports.length === 0 && (
+                    <p style={st.muted}>No reports filed yet.</p>
+                  )}
+                  {reports.map(r => (
+                    <div key={r.id} style={st.ledgerRow}>
+                      <div>
+                        <span style={st.white}>{r.title}</span>
+                        <span style={st.muted}> — {r.summary}</span>
+                        <span style={st.muted}> · {r.by} · {r.time} · {r.id}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {role === 'md' && section === 'board' && (
+              <>
+                <div style={st.card}>
+                  <div style={st.statRow}>
+                    <div style={st.statCard}><h4>GROSS EARNED CASH</h4><p style={st.statNum}>$3,489,120.50</p></div>
+                    <div style={st.statCard}><h4>SHAREHOLDER EQUITY</h4><p style={{ ...st.statNum, color: ZhonnexTokens.colors.velocityGold }}>$1,204,775.00</p></div>
+                    <div style={st.statCard}><h4>DIVIDEND YIELD</h4><p style={{ ...st.statNum, color: ZhonnexTokens.colors.imperialCyan }}>6.4%</p></div>
+                  </div>
+                </div>
+                <div style={st.card}>
+                  <h3 style={st.sectionHead}>SUB-HOLDINGS PERFORMANCE</h3>
+                  {HOLDS.map(h => (
+                    <div key={h.name} style={st.ledgerRow}>
+                      <div>
+                        <span style={st.white}>{h.name}</span>
+                        <span style={st.muted}> · {h.note}</span>
+                      </div>
+                      <span style={st.pill}>{h.status}</span>
+                    </div>
+                  ))}
+                  <p style={st.muted}>
+                    Directors and shareholders observe here; operational
+                    controls remain with the MD and Overlord tracks.
+                  </p>
+                </div>
+              </>
+            )}
+
             {/* ---------------- SECRETARY ---------------- */}
             {role === 'secretary' && section === 'holdings' && (
               <div style={st.card}>
@@ -381,6 +624,59 @@ export default function InternalRoleRoom() {
                     </div>
                     <span style={{ ...st.pill, color: ZhonnexTokens.colors.securityPass }}>
                       ✓ {w.tasks} VERIFIED
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {role === 'secretary' && section === 'fin-reports' && (
+              <div style={st.card}>
+                <div style={st.statRow}>
+                  <div style={st.statCard}><h4>STAGED VALUE</h4><p style={{ ...st.statNum, color: ZhonnexTokens.colors.velocityGold }}>${stagedTotal}</p></div>
+                  <div style={st.statCard}><h4>SETTLED VALUE</h4><p style={st.statNum}>${paidTotal}</p></div>
+                </div>
+                <h3 style={st.sectionHead}>EXECUTED WIRES RECORD</h3>
+                {queue.filter(q => q.status === 'PAID_TRANSACTION_SETTLED').length === 0 && (
+                  <p style={st.muted}>No executed wires yet.</p>
+                )}
+                {queue
+                  .filter(q => q.status === 'PAID_TRANSACTION_SETTLED')
+                  .map(q => (
+                    <div key={q.id} style={st.ledgerRow}>
+                      <div>
+                        <span style={st.monoCyan}>{q.id}</span>
+                        <span style={st.white}> · {q.name}</span>
+                      </div>
+                      <span style={st.mono}>{q.amount}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {role === 'secretary' && section === 'treasury' && (
+              <div style={st.card}>
+                <p style={st.muted}>
+                  Treasurer monitor — every digital movement of company funds
+                  across the executive payroll pipeline.
+                </p>
+                {queue.map(q => (
+                  <div key={q.id} style={st.ledgerRow}>
+                    <div>
+                      <span style={st.monoCyan}>{q.id}</span>
+                      <span style={st.white}> · {q.name}</span>
+                      <span style={st.muted}> · {q.amount}</span>
+                    </div>
+                    <span
+                      style={{
+                        ...st.pill,
+                        color:
+                          q.status === 'PAID_TRANSACTION_SETTLED'
+                            ? ZhonnexTokens.colors.securityPass
+                            : ZhonnexTokens.colors.velocityGold
+                      }}
+                    >
+                      {q.status === 'PAID_TRANSACTION_SETTLED' ? 'MOVED — SETTLED' : 'PENDING MOVE'}
                     </span>
                   </div>
                 ))}
@@ -436,34 +732,28 @@ export default function InternalRoleRoom() {
             {role === 'overlord' && section === 'positions' && (
               <div style={st.card}>
                 <form onSubmit={injectPosition} style={st.form}>
-                  <label style={st.label} htmlFor="pos-role">ROLE TITLE</label>
+                  <label style={st.label} htmlFor="pos-job">TARGET JOB OPENING</label>
+                  <select
+                    id="pos-job"
+                    style={st.input}
+                    value={pos.jobRole}
+                    onChange={e => setPos({ ...pos, jobRole: e.target.value })}
+                    required
+                  >
+                    <option value="">— select job —</option>
+                    {matrix.jobs.map(j => (
+                      <option key={j.role} value={j.role}>{j.role}</option>
+                    ))}
+                  </select>
+                  <label style={st.label} htmlFor="pos-title">NEW POSITION TITLE</label>
                   <input
-                    id="pos-role"
+                    id="pos-title"
                     style={st.input}
                     placeholder="e.g. Sub-Orbital Pilot"
-                    value={pos.role}
-                    onChange={e => setPos({ ...pos, role: e.target.value })}
+                    value={pos.title}
+                    onChange={e => setPos({ ...pos, title: e.target.value })}
                     required
                   />
-                  <label style={st.label} htmlFor="pos-div">DIVISION</label>
-                  <input
-                    id="pos-div"
-                    style={st.input}
-                    placeholder="e.g. MX SUITE LOGISTICS"
-                    value={pos.division}
-                    onChange={e => setPos({ ...pos, division: e.target.value })}
-                    required
-                  />
-                  <label style={st.label} htmlFor="pos-type">TRACK / TYPE</label>
-                  <select
-                    id="pos-type"
-                    style={st.input}
-                    value={pos.type}
-                    onChange={e => setPos({ ...pos, type: e.target.value })}
-                  >
-                    <option>FULL-TIME</option>
-                    <option>CONTRACT</option>
-                  </select>
                   <button type="submit" style={st.cyanBtn}>
                     INJECT POSITION INTO R&S MATRIX
                   </button>
@@ -472,7 +762,7 @@ export default function InternalRoleRoom() {
                   {matrix.jobs.map(j => (
                     <div key={j.role} style={st.ledgerRow}>
                       <span style={st.white}>{j.role}</span>
-                      <span style={st.muted}>{j.division} · {j.type}</span>
+                      <span style={st.muted}>{(j.positions || []).join(' · ')}</span>
                     </div>
                   ))}
                 </div>
@@ -545,6 +835,43 @@ export default function InternalRoleRoom() {
               </div>
             )}
 
+            {section === 'comms' && (
+              <>
+                <div style={st.card}>
+                  <h3 style={st.sectionHead}>INBOX — ALL INTERFACES</h3>
+                  {comms.length === 0 && (
+                    <p style={st.muted}>Mesh silent — no transmissions yet.</p>
+                  )}
+                  {comms.map(c => (
+                    <div key={c.id} style={st.ledgerRow}>
+                      <div>
+                        <span style={st.monoCyan}>[{c.role}]</span>{' '}
+                        <span style={st.white}>{c.subject}</span>
+                        <span style={st.muted}> — {c.body}</span>
+                        <span style={st.muted}> · {c.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {room && canTransmit(room.menu) && (
+                  <div style={st.card}>
+                    <h3 style={st.sectionHead}>TRANSMIT DIRECTIVE</h3>
+                    <p style={st.muted}>
+                      Cleared positions: OVERLORD, MD, SECRETARY. All tracks
+                      receive.
+                    </p>
+                    <form onSubmit={transmit} style={st.form}>
+                      <label style={st.label} htmlFor="c-sub">SUBJECT</label>
+                      <input id="c-sub" style={st.input} value={commSubject} onChange={e => setCommSubject(e.target.value)} required />
+                      <label style={st.label} htmlFor="c-body">MESSAGE / DOCUMENT NOTE</label>
+                      <textarea id="c-body" style={{ ...st.input, minHeight: '90px' }} value={commBody} onChange={e => setCommBody(e.target.value)} required />
+                      <button type="submit" style={st.cyanBtn}>TRANSMIT ACROSS INTERFACES</button>
+                    </form>
+                  </div>
+                )}
+              </>
+            )}
+
             <button
               style={st.backBtn}
               type="button"
@@ -587,6 +914,14 @@ const st: Record<string, React.CSSProperties> = {
     padding: '4px 8px'
   },
   notice: { color: ZhonnexTokens.colors.securityPass, fontSize: '0.85rem', marginBottom: '1rem' },
+  error: { color: ZhonnexTokens.colors.securityFail, fontSize: '0.8rem', marginBottom: '0.75rem' },
+  sectionHead: {
+    fontFamily: ZhonnexTokens.typography.displayFont,
+    fontSize: '0.85rem',
+    letterSpacing: '2px',
+    color: ZhonnexTokens.colors.imperialCyan,
+    margin: '0 0 1rem 0'
+  },
   card: {
     backgroundColor: ZhonnexTokens.colors.quantumSlate,
     border: '1px solid #222',
