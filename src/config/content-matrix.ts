@@ -32,6 +32,8 @@ export interface JobOpening {
   division: string;
   loc: string;
   type: string;
+  /* optional so partially-migrated deploys still typecheck */
+  positions?: string[];
 }
 
 export interface ContentMatrix {
@@ -60,9 +62,9 @@ export const DEFAULT_MATRIX: ContentMatrix = {
     { tier: 'FLEET EXPANSION PACK', perk: 'Add 10 extra MX Suite logistics nodes at 40% below the standard rate.' }
   ],
   jobs: [
-    { role: 'Vector Guidance Analyst', division: 'MX SUITE LOGISTICS', loc: 'Onitsha HQ / Remote', type: 'FULL-TIME' },
-    { role: 'Ledger Integrity Auditor', division: 'VELOCITY FINANCE', loc: 'Remote', type: 'CONTRACT' },
-    { role: 'Cognitive Mesh Trainer', division: 'GENERATIONAL MESH', loc: 'Lagos Node', type: 'FULL-TIME' }
+    { role: 'Vector Guidance Analyst', division: 'MX SUITE LOGISTICS', loc: 'Onitsha HQ / Remote', type: 'FULL-TIME', positions: ['Junior Analyst', 'Senior Analyst', 'Division Lead'] },
+    { role: 'Ledger Integrity Auditor', division: 'VELOCITY FINANCE', loc: 'Remote', type: 'CONTRACT', positions: ['Auditor II', 'Chief Auditor'] },
+    { role: 'Cognitive Mesh Trainer', division: 'GENERATIONAL MESH', loc: 'Lagos Node', type: 'FULL-TIME', positions: ['Trainer', 'Curriculum Designer'] }
   ]
 };
 
@@ -76,7 +78,12 @@ export function loadContentMatrix(): ContentMatrix {
       billing: Array.isArray(parsed.billing) ? (parsed.billing as BillingRow[]) : DEFAULT_MATRIX.billing,
       products: Array.isArray(parsed.products) ? (parsed.products as ProductLicense[]) : DEFAULT_MATRIX.products,
       offers: Array.isArray(parsed.offers) ? (parsed.offers as Offer[]) : DEFAULT_MATRIX.offers,
-      jobs: Array.isArray(parsed.jobs) ? (parsed.jobs as JobOpening[]) : DEFAULT_MATRIX.jobs
+      jobs: Array.isArray(parsed.jobs)
+        ? (parsed.jobs as JobOpening[]).map(j => ({
+            ...j,
+            positions: Array.isArray(j.positions) ? j.positions : ['Graduate Trainee']
+          }))
+        : DEFAULT_MATRIX.jobs
     };
   } catch {
     return DEFAULT_MATRIX;
