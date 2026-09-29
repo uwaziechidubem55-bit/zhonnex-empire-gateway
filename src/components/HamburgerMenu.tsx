@@ -23,6 +23,7 @@ const CUSTOMER_LINKS: Array<{ label: string; path: string }> = [
 ];
 
 const STAFF_LINKS: Array<{ label: string; path: string }> = [
+  { label: '🛰️ Duty Post (Personal Space)', path: '/dashboard/room/staff/duty-post' },
   { label: '🗃️ Employee Dossier & Credential', path: '/dashboard/room/staff/dossier' },
   { label: '💳 Compensation & Direct Deposit', path: '/dashboard/room/staff/compensation' },
   { label: '📊 Operational Metrics Pipeline', path: '/dashboard/room/staff/metrics' },
@@ -35,12 +36,18 @@ const MD_LINKS: Array<{ label: string; path: string }> = [
   { label: '🏢 Holdings Matrix (Company Registry)', path: '/dashboard/room/md/holdings' },
   { label: '📉 Productivity Tracker & Task Metrics', path: '/dashboard/room/md/productivity' },
   { label: '🔧 Role Configuration Matrix', path: '/dashboard/room/md/role-config' },
+  { label: '📑 Secretary General Desk', path: '/dashboard/room/md/sec-gen' },
+  { label: '🏛️ Board of Directors Chamber', path: '/dashboard/room/md/board' },
+  { label: '📨 Cross-Interface Comms', path: '/dashboard/room/md/comms' },
   { label: '💸 Payment Hub: Initiate Board', path: '/dashboard/management-md' }
 ];
 
 const SECRETARY_LINKS: Array<{ label: string; path: string }> = [
   { label: '🏢 Holdings Matrix (Read-Only)', path: '/dashboard/room/secretary/holdings' },
   { label: '📉 Task Counter Audit Records', path: '/dashboard/room/secretary/audit' },
+  { label: '📊 Financial Documentation & Reports', path: '/dashboard/room/secretary/fin-reports' },
+  { label: '🏦 Treasury Fund Monitor', path: '/dashboard/room/secretary/treasury' },
+  { label: '📨 Cross-Interface Comms', path: '/dashboard/room/secretary/comms' },
   { label: '💸 Payment Hub: Execute Queue', path: '/dashboard/management-secretary' }
 ];
 
@@ -50,7 +57,8 @@ const OVERLORD_LINKS: Array<{ label: string; path: string }> = [
   { label: '⚙️ Master Price Matrix Core', path: '/dashboard/room/overlord/price-matrix' },
   { label: '👑 Position Creator Panel', path: '/dashboard/room/overlord/positions' },
   { label: '🔑 Global Override Matrix', path: '/dashboard/room/overlord/override' },
-  { label: '📝 Master Payroll Scheduler', path: '/dashboard/room/overlord/payroll' }
+  { label: '📝 Master Payroll Scheduler', path: '/dashboard/room/overlord/payroll' },
+  { label: '📨 Cross-Interface Comms', path: '/dashboard/room/overlord/comms' }
 ];
 
 export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({ isOpen, onClose, role }) => {
