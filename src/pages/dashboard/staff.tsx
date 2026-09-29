@@ -1,13 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ZhonnexTokens } from '../../config/design-tokens';
 import { HeaderNavigation } from '../../components/HeaderNavigation';
 import { HamburgerMenu } from '../../components/HamburgerMenu';
 
 export default function StaffDashboardZone() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [identity, setIdentity] = useState({ name: '', bic: '', iban: '' });
+  const [identityNote, setIdentityNote] = useState('');
   const [tasks, setTasks] = useState([
     { id: "T-901", description: "Validate anomalous velocity deviation on tracking path vector ZNX-SHUTTLE-04.", urgency: "HIGH" }
   ]);
+  useEffect(() => {
+    fetch('/api/workforce-roster')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        const person = data && Array.isArray(data.people) ? data.people[0] : null;
+        if (!person) {
+          setIdentityNote('Name and payout keys are held on the server. Enter through the internal terminal first.');
+          return;
+        }
+        setIdentity({
+          name: person.name || '',
+          bic: person.bic || '',
+          iban: person.iban || ''
+        });
+      })
+      .catch(() => {
+        setIdentityNote('Name and payout keys are held on the server.');
+      });
+  }, []);
 
   return (
     <div style={styles.pageWrapper}>
@@ -51,9 +72,10 @@ export default function StaffDashboardZone() {
           <h3 style={styles.cardTitle}>Direct Salary Remittance & Payroll Dossier</h3>
           <p style={styles.textLight}>Input or modify your corporate routing parameters. Financial payouts are handled securely via Stripe banking gates.</p>
           <div style={styles.formGrid}>
-            <div style={styles.formGroup}><label style={styles.label}>Corporate Employee Legal Name</label><input type="text" defaultValue="Alexander Thorne" style={styles.input} readOnly /></div>
-            <div style={styles.formGroup}><label style={styles.label}>Global Bank Routing Key / BIC</label><input type="text" placeholder="STRXUS33XXX" style={styles.input} /></div>
-            <div style={styles.formGroup}><label style={styles.label}>International Bank Account Number (IBAN)</label><input type="text" placeholder="US7719002283991004" style={styles.input} /></div>
+            {identityNote && <p style={styles.textLight}>{identityNote}</p>}
+            <div style={styles.formGroup}><label style={styles.label}>Corporate Employee Legal Name</label><input type="text" value={identity.name} style={styles.input} readOnly placeholder="Held on server" /></div>
+            <div style={styles.formGroup}><label style={styles.label}>Global Bank Routing Key / BIC</label><input type="text" value={identity.bic} style={styles.input} readOnly placeholder="Held on server" /></div>
+            <div style={styles.formGroup}><label style={styles.label}>International Bank Account Number (IBAN)</label><input type="text" value={identity.iban} style={styles.input} readOnly placeholder="Held on server" /></div>
             <button style={styles.saveBtn}>Lock Payout Configuration</button>
           </div>
         </div>
