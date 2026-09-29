@@ -10,6 +10,7 @@ import {
   DEFAULT_MATRIX,
   loadContentMatrix
 } from '../../../config/content-matrix';
+import { Application, loadApplications } from '../../../config/applications';
 
 /* ------------------------------------------------------------------ */
 /* Customer rooms — one dynamic page serves every hamburger link.     */
@@ -49,11 +50,15 @@ export default function CustomerRoom() {
      published matrix; live-updates when Management publishes in
      another tab). */
   const [matrix, setMatrix] = useState<ContentMatrix>(DEFAULT_MATRIX);
+  const [apps, setApps] = useState<Application[]>([]);
   useEffect(() => {
-    setMatrix(loadContentMatrix());
-    const onStorage = () => setMatrix(loadContentMatrix());
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    const refresh = () => {
+      setMatrix(loadContentMatrix());
+      setApps(loadApplications());
+    };
+    refresh();
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
   }, []);
 
   const section =
@@ -333,34 +338,80 @@ export default function CustomerRoom() {
             )}
 
             {section === 'jobs' && (
-              <div style={styles.card}>
-                {matrix.jobs.length === 0 && (
-                  <p style={styles.muted}>
-                    No open vacancies right now — Management publishes new
-                    openings here.
-                  </p>
-                )}
-                {matrix.jobs.map(j => (
-                  <div key={j.role} style={styles.jobCard}>
-                    <div style={styles.productHead}>
-                      <span style={styles.productName}>{j.role}</span>
-                      <span style={styles.roomBadge}>{j.type}</span>
+              <>
+                <div style={styles.card}>
+                  {matrix.jobs.length === 0 && (
+                    <p style={styles.muted}>
+                      No open vacancies right now — Management publishes new
+                      openings here.
+                    </p>
+                  )}
+                  {matrix.jobs.map(j => (
+                    <div key={j.role} style={styles.jobCard}>
+                      <div style={styles.productHead}>
+                        <span style={styles.productName}>{j.role}</span>
+                        <span style={styles.roomBadge}>{j.type}</span>
+                      </div>
+                      <div style={styles.productMeta}>
+                        {j.division} · {j.loc}
+                      </div>
+                      <div style={styles.posWrap}>
+                        {(j.positions || []).map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            style={styles.posChip}
+                            onClick={() =>
+                              router.push(
+                                `/apply?job=${encodeURIComponent(j.role)}&position=${encodeURIComponent(p)}`
+                              )
+                            }
+                          >
+                            {p} → APPLY
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div style={styles.productMeta}>
-                      {j.division} · {j.loc}
+                  ))}
+                </div>
+
+                <div style={styles.card}>
+                  <h3 style={styles.sectionHead}>YOUR APPLICATIONS</h3>
+                  {apps.length === 0 && (
+                    <p style={styles.muted}>
+                      No applications yet — select a position above to begin
+                      the 4-step application.
+                    </p>
+                  )}
+                  {apps.map(a => (
+                    <div key={a.id} style={styles.appRow}>
+                      <div>
+                        <span style={styles.white}>{a.position}</span>
+                        <span style={styles.muted}> · {a.job}</span>
+                        <span style={styles.appRef}> · {a.id}</span>
+                      </div>
+                      {a.status === 'APPOINTED' ? (
+                        <div style={styles.appointedBox}>
+                          <span style={styles.passcode}>{a.passcode}</span>
+                          <button
+                            type="button"
+                            style={styles.goldBtn}
+                            onClick={() =>
+                              router.push('/dashboard/room/staff/duty-post')
+                            }
+                          >
+                            CLICK TO ACCESS POSITION
+                          </button>
+                        </div>
+                      ) : (
+                        <span style={{ ...styles.statusPill, color: ZhonnexTokens.colors.velocityGold }}>
+                          UNDER REVIEW
+                        </span>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      style={styles.goldBtn}
-                      onClick={() =>
-                        setNotice(`Application for ${j.role} routed to HR mesh.`)
-                      }
-                    >
-                      APPLY
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
 
             {section === 'ads' && (
@@ -620,6 +671,45 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '1rem',
     backgroundColor: '#030303'
   },
+  posWrap: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.9rem' },
+  posChip: {
+    backgroundColor: 'transparent',
+    border: `1px solid ${ZhonnexTokens.colors.imperialCyan}`,
+    color: ZhonnexTokens.colors.imperialCyan,
+    fontFamily: ZhonnexTokens.typography.displayFont,
+    fontSize: '0.62rem',
+    letterSpacing: '1px',
+    padding: '8px 12px',
+    borderRadius: '20px',
+    cursor: 'pointer'
+  },
+  sectionHead: {
+    fontFamily: ZhonnexTokens.typography.displayFont,
+    fontSize: '0.85rem',
+    letterSpacing: '2px',
+    color: ZhonnexTokens.colors.imperialCyan,
+    margin: '0 0 1rem 0'
+  },
+  appRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1rem',
+    flexWrap: 'wrap',
+    padding: '0.9rem 0',
+    borderBottom: '1px solid #1a1a1c'
+  },
+  appRef: { color: '#666', fontFamily: 'monospace', fontSize: '0.75rem' },
+  appointedBox: { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' },
+  passcode: {
+    fontFamily: 'monospace',
+    color: ZhonnexTokens.colors.securityPass,
+    fontSize: '0.9rem',
+    border: '1px solid #143a24',
+    borderRadius: '4px',
+    padding: '4px 8px'
+  },
+  white: { color: '#fff', fontSize: '0.95rem' },
   rewardBanner: {
     backgroundColor: '#030303',
     borderLeft: `4px solid ${ZhonnexTokens.colors.imperialCyan}`,
