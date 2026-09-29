@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ZhonnexTokens } from '../../config/design-tokens';
 import { HeaderNavigation } from '../../components/HeaderNavigation';
 import { HamburgerMenu } from '../../components/HamburgerMenu';
@@ -8,19 +8,46 @@ import {
   stagePayment
 } from '../../config/payroll-queue';
 
-const EMPLOYEES = [
-  { name: 'Alexander Thorne', position: 'MX Vector Auditor', tasksDone: 142, salary: '$8,500.00', account: 'IBAN: US77•••1004' },
-  { name: 'Seraphina Vance', position: 'Rust Infrastructure SRE', tasksDone: 289, salary: '$12,400.00', account: 'IBAN: US88•••9921' }
-];
+interface EmployeeCard {
+  name: string;
+  position: string;
+  tasksDone: number;
+  salary: string;
+  account: string;
+}
 
 export default function ManagementMdZone() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [employees, setEmployees] = useState<EmployeeCard[]>([]);
   const [queue, setQueue] = useState<PayrollItem[]>(() => loadPayrollQueue());
   const [notice, setNotice] = useState('');
 
+  useEffect(() => {
+    fetch('/api/workforce-roster')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (!data || !Array.isArray(data.people)) {
+          setNotice('Workforce names are held on the server. Enter through the internal terminal first.');
+          return;
+        }
+        setEmployees(
+          data.people.map((p: EmployeeCard & { tasks?: number }) => ({
+            name: p.name,
+            position: p.position,
+            tasksDone: p.tasksDone || p.tasks || 0,
+            salary: p.salary,
+            account: p.account
+          }))
+        );
+      })
+      .catch(() => {
+        setNotice('Workforce names are held on the server.');
+      });
+  }, []);
+
   const entryFor = (name: string) => queue.find(q => q.name === name);
 
-  const initiatePaymentPipeline = (emp: (typeof EMPLOYEES)[number]) => {
+  const initiatePaymentPipeline = (emp: EmployeeCard) => {
     const updated = stagePayment({
       name: emp.name,
       position: emp.position,
@@ -75,7 +102,12 @@ export default function ManagementMdZone() {
                 </tr>
               </thead>
               <tbody>
-                {EMPLOYEES.map(emp => {
+                {employees.length === 0 && (
+                  <tr style={styles.trRow}>
+                    <td colSpan={5}>No roster loaded. Names are stored in the server environment.</td>
+                  </tr>
+                )}
+                {employees.map(emp => {
                   const entry = entryFor(emp.name);
                   return (
                     <tr key={emp.name} style={styles.trRow}>
