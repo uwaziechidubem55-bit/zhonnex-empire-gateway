@@ -11,6 +11,7 @@ import {
   saveContentMatrix,
   resetContentMatrix
 } from '../../config/content-matrix';
+import { Application, appointApplication, loadApplications } from '../../config/applications';
 
 /* ------------------------------------------------------------------ */
 /* MD PUBLISH CONSOLE — Management edits the customer-facing matrix   */
@@ -62,11 +63,34 @@ export default function ContentMatrixControl() {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [matrix, setMatrix] = useState<ContentMatrix>(DEFAULT_MATRIX);
+  const [apps, setApps] = useState<Application[]>([]);
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
     setMatrix(loadContentMatrix());
+    setApps(loadApplications());
   }, []);
+
+  const setJobPositions = (i: number, v: string) => {
+    setMatrix(m => ({
+      ...m,
+      jobs: m.jobs.map((j, idx) =>
+        idx === i
+          ? { ...j, positions: v.split(',').map(x => x.trim()).filter(Boolean) }
+          : j
+      )
+    }));
+  };
+
+  const appoint = (id: string) => {
+    const res = appointApplication(id);
+    setApps(loadApplications());
+    if (res.app && res.app.passcode) {
+      setNotice(
+        `APPOINTED ${res.app.fullName} as ${res.app.position}. Passcode ${res.app.passcode} — username is the name on their application.`
+      );
+    }
+  };
 
   const setRow = (key: keyof ContentMatrix, index: number, field: string, value: string) => {
     setMatrix(m => ({
@@ -77,10 +101,10 @@ export default function ContentMatrixControl() {
     }) as ContentMatrix);
   };
 
-  const addRow = (key: keyof ContentMatrix, template: Row) => {
+  const addRow = (key: keyof ContentMatrix, template: unknown) => {
     setMatrix(m => ({
       ...m,
-      [key]: [...(m[key] as unknown as Row[]), template]
+      [key]: [...(m[key] as unknown as Row[]), template as Row]
     }) as ContentMatrix);
   };
 
@@ -225,6 +249,11 @@ export default function ContentMatrixControl() {
                 <Field label="DIVISION" value={row.division} onChange={v => setRow('jobs', i, 'division', v)} />
                 <Field label="LOCATION" value={row.loc} onChange={v => setRow('jobs', i, 'loc', v)} />
                 <Field label="TYPE" value={row.type} onChange={v => setRow('jobs', i, 'type', v)} />
+                <Field
+                  label="POSITIONS (COMMA SEPARATED)"
+                  value={(row.positions || []).join(', ')}
+                  onChange={v => setJobPositions(i, v)}
+                />
               </div>
               <button type="button" style={s.removeBtn} onClick={() => removeRow('jobs', i)}>
                 REMOVE VACANCY
@@ -235,11 +264,60 @@ export default function ContentMatrixControl() {
             type="button"
             style={s.addBtn}
             onClick={() =>
-              addRow('jobs', { role: 'New Role', division: 'DIVISION', loc: 'Remote', type: 'FULL-TIME' })
+              addRow('jobs', { role: 'New Role', division: 'DIVISION', loc: 'Remote', type: 'FULL-TIME', positions: ['Graduate Trainee'] })
             }
           >
             + ADD VACANCY
           </button>
+        </div>
+
+        {/* APPLICATIONS & APPOINTMENTS */}
+        <div style={s.card}>
+          <h3 style={s.cardTitle}>🧾 Applications & Appointments</h3>
+          <p style={s.muted}>
+            Customer 4-step applications land here. Appointing issues the
+            ZH-…-Corp passcode and opens the person&apos;s Duty Post space.
+          </p>
+          {apps.length === 0 && (
+            <p style={s.muted}>No applications received yet.</p>
+          )}
+          {apps.map(a => (
+            <div key={a.id} style={s.rowBox}>
+              <div style={s.appHead}>
+                <span style={s.appName}>{a.fullName}</span>
+                <span style={s.appMeta}>
+                  {a.position} · {a.job} · {a.id}
+                </span>
+              </div>
+              <p style={s.appMeta}>
+                {a.email} · {a.phone} · {a.nationality} · DOB {a.dob}
+              </p>
+              <p style={s.appMeta}>
+                Location: {a.location} — {a.address1}
+                {a.address2 ? `, ${a.address2}` : ''}
+              </p>
+              <p style={s.appMeta}>Experience: {a.experience}</p>
+              <p style={s.appMeta}>
+                CV: {a.cvFile}
+                {a.docFile ? ` · Document: ${a.docFile}` : ''}
+              </p>
+              <p style={s.appMeta}>Brings: {a.bring}</p>
+              <p style={s.appMeta}>Will change: {a.change}</p>
+              {a.status === 'APPOINTED' ? (
+                <p style={s.passLine}>
+                  ✓ APPOINTED — passcode {a.passcode}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  style={s.appointBtn}
+                  onClick={() => appoint(a.id)}
+                >
+                  APPOINT & ISSUE PASSCODE
+                </button>
+              )}
+            </div>
+          ))}
         </div>
 
         <div style={s.actionRow}>
@@ -414,5 +492,44 @@ const s: Record<string, React.CSSProperties> = {
     letterSpacing: '2px',
     cursor: 'pointer',
     padding: 0
+  },
+  appHead: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    flexWrap: 'wrap',
+    marginBottom: '0.4rem'
+  },
+  appName: {
+    color: '#fff',
+    fontFamily: ZhonnexTokens.typography.displayFont,
+    fontSize: '0.9rem',
+    letterSpacing: '1px'
+  },
+  appMeta: {
+    color: ZhonnexTokens.colors.textMuted,
+    fontSize: '0.8rem',
+    margin: '0.2rem 0',
+    lineHeight: 1.5
+  },
+  passLine: {
+    color: ZhonnexTokens.colors.securityPass,
+    fontFamily: 'monospace',
+    fontSize: '0.85rem',
+    marginTop: '0.6rem'
+  },
+  appointBtn: {
+    marginTop: '0.75rem',
+    padding: '12px 16px',
+    backgroundColor: ZhonnexTokens.colors.imperialCyan,
+    border: 'none',
+    color: '#000',
+    fontFamily: ZhonnexTokens.typography.displayFont,
+    fontWeight: 'bold',
+    fontSize: '0.7rem',
+    letterSpacing: '2px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    width: '100%'
   }
 };
